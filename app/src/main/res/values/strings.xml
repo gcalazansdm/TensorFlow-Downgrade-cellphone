@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">tensorFlow Android Celphone</string>
+    <string name="title_activity_cassifier">CassifierActivity</string>
+</resources>

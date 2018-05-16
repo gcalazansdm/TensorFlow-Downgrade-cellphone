@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">TensorFlow Interface</string>
+    <string name="capturing" />
+</resources>
