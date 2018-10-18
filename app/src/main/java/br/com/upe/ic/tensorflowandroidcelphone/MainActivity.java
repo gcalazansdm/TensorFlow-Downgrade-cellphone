@@ -8,7 +8,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
-import org.tensorflow.demo.Classifier;
+import org.tensorflow.demo.PermissionsUtil;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+       PermissionsUtil.getInstance().requestCameraPermission(this,PermissionsUtil.CAMERA_REQUEST);
         mActivity = this;
         bt = (Button) findViewById(R.id.button);
         checkTTS();
@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent it = new Intent(mActivity, CassifierActivity.class);
+                Intent it = new Intent(mActivity, ClassifierActivity.class);
                 startActivity(it);
             }
 
@@ -57,5 +57,16 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PermissionsUtil.CAMERA_REQUEST: {
+                if (!PermissionsUtil.getInstance().hasCameraPermission(this)) {
+                    PermissionsUtil.getInstance().requestCameraPermission(this,PermissionsUtil.CAMERA_REQUEST);
+                }
+            }
 
+        }
+    }
 }

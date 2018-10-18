@@ -35,21 +35,13 @@ public class ImageUtils {
       Log.e("Tensorflow","Native library not found, native RGB -> YUV conversion may be unavailable.");
     }
   }
+  // This value is 2 ^ 18 - 1, and is used to clamp the RGB values before their ranges
+  // are normalized to eight bits.
+  static final int kMaxChannelValue = 262143;
 
-  /**
-   * Utility method to compute the allocated size in bytes of a YUV420SP image
-   * of the given dimensions.
-   */
-  public static int getYUVByteSize(final int width, final int height) {
-    // The luminance plane requires 1 byte per pixel.
-    final int ySize = width * height;
+  // Always prefer the native implementation if available.
+  private static boolean useNativeConversion = true;
 
-    // The UV plane works on 2x2 blocks, so dimensions with odd size must be rounded up.
-    // Each 2x2 block takes 2 bytes to encode, one each for U and V.
-    final int uvSize = ((width + 1) / 2) * ((height + 1) / 2) * 2;
-
-    return ySize + uvSize;
-  }
 
   /**
    * Saves a Bitmap object to disk for analysis.
@@ -58,28 +50,6 @@ public class ImageUtils {
    */
   public static void saveBitmap(final Bitmap bitmap) {
     saveBitmap(bitmap, "preview.png");
-  }
-  public static void save(final byte[] bitmap) { final String root =
-          Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "tensorflow";
-    final File myDir = new File(root);
-
-    if (!myDir.mkdirs()) {
-      Log.e("Tensorflow","Make dir failed");
-    }
-
-    final String fname = "111";
-    final File file = new File(myDir, fname);
-    if (file.exists()) {
-      file.delete();
-    }
-    try {
-      final FileOutputStream out = new FileOutputStream(file);
-      out.write(bitmap);
-      out.flush();
-      out.close();
-    } catch (final Exception e) {
-      Log.e("Tensorflow", "Exception!",e);
-    }
   }
 
   /**
@@ -111,13 +81,6 @@ public class ImageUtils {
       Log.e("tensorflow","Make dir failed");
     }
   }
-
-  // This value is 2 ^ 18 - 1, and is used to clamp the RGB values before their ranges
-  // are normalized to eight bits.
-  static final int kMaxChannelValue = 262143;
-
-  // Always prefer the native implementation if available.
-  private static boolean useNativeConversion = true;
 
   public static void convertYUV420SPToARGB8888(
       byte[] input,
@@ -321,38 +284,29 @@ public class ImageUtils {
     final Matrix matrix = new Matrix();
 
     if (applyRotation != 0) {
-      // Translate so center of image is at origin.
       matrix.postTranslate(-srcWidth / 2.0f, -srcHeight / 2.0f);
 
-      // Rotate around origin.
       matrix.postRotate(applyRotation);
     }
 
-    // Account for the already applied rotation, if any, and then determine how
-    // much scaling is needed for each axis.
     final boolean transpose = (Math.abs(applyRotation) + 90) % 180 == 0;
 
     final int inWidth = transpose ? srcHeight : srcWidth;
     final int inHeight = transpose ? srcWidth : srcHeight;
 
-    // Apply scaling if necessary.
     if (inWidth != dstWidth || inHeight != dstHeight) {
       final float scaleFactorX = dstWidth / (float) inWidth;
       final float scaleFactorY = dstHeight / (float) inHeight;
 
       if (maintainAspectRatio) {
-        // Scale by minimum factor so that dst is filled completely while
-        // maintaining the aspect ratio. Some image may fall off the edge.
         final float scaleFactor = Math.max(scaleFactorX, scaleFactorY);
         matrix.postScale(scaleFactor, scaleFactor);
       } else {
-        // Scale exactly to fill dst from src.
         matrix.postScale(scaleFactorX, scaleFactorY);
       }
     }
 
     if (applyRotation != 0) {
-      // Translate back from origin centered reference to destination frame.
       matrix.postTranslate(dstWidth / 2.0f, dstHeight / 2.0f);
     }
 

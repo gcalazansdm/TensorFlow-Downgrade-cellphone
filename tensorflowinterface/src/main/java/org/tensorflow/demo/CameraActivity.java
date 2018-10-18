@@ -39,11 +39,8 @@ public abstract class CameraActivity extends Activity {
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
 		setContentView(R.layout.activity_camera);
-
 		initCamera();
-
 	}
 
 	private void initCamera() {
@@ -77,7 +74,6 @@ public abstract class CameraActivity extends Activity {
 			}
 			final byte[] bitmapdata = bytes;
 			try {
-				// Initialize the storage bitmaps once when the resolution is known.
 				if (rgbBytes == null) {
 					Camera.Size previewSize = camera.getParameters().getPreviewSize();
 					previewHeight = previewSize.height;

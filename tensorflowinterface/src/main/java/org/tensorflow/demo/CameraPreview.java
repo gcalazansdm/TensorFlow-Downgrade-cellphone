@@ -36,20 +36,19 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     public CameraPreview(Context context, Camera.PreviewCallback previewCallback) {
         super(context);
+
         mPreviewCallback = previewCallback;
         mContext = context;
 
-        Log.e("Tag", this.getResources().getConfiguration().orientation + "," + Configuration.ORIENTATION_LANDSCAPE );
         mHolder = getHolder();
         mHolder.addCallback(this);
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        init();
-        boolean hasCameraPermission = PermissionsUtil.getInstance().hasCameraPermission(mContext);
-        if(!hasCameraPermission)
-        {
-            PermissionsUtil.getInstance().requestCameraPermission((Activity) context,81);
-        }
-        if(camera != null){
+        boolean b = false;
+        try{
+           b = init();
+       }catch (IOException e){}
+
+        if(b && camera != null){
             Camera.Parameters parameters = camera.getParameters();
             parameters.setRotation(90);
             camera.setParameters(parameters);
@@ -60,13 +59,17 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        init();
+        try{
+            init();
+        }catch (IOException e){}
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) {
         if (mHolder.getSurface() != null) {
-            init();
+            try{
+                init();
+            }catch (IOException e){}
         }
     }
 
@@ -93,26 +96,27 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         initTerminateMutex.unlock();
     }
 
-    private void init() {
-        try {
-               camera.setPreviewDisplay(mHolder);
-               camera.startPreview();
-            } catch (IOException e) {
+    private boolean init() throws IOException{
+        boolean rValue = false;
+        if (PermissionsUtil.getInstance().hasCameraPermission(mContext)) {
+                openCamera();
+                camera.setPreviewDisplay(mHolder);
+                camera.startPreview();
+                rValue = true;
         }
+        return rValue;
     }
 
     private void openCamera() {
         cameraMutex.lock();
         if (cameraIsNotOpen) {
             for (int i = 0; i < Camera.getNumberOfCameras(); ++i) {
-                try {
                     camera = Camera.open(i);
                     cameraIsNotOpen = false;
                     if (camera != null) {
                         cameraMutex.unlock();
+                        break;
                     }
-                } catch (RuntimeException e) {
-                }
             }
         }
         cameraMutex.unlock();
@@ -122,13 +126,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         cameraMutex.lock();
         if (!cameraIsNotOpen) {
             if (camera != null) {
-                try {
-                    cameraIsNotOpen = true;
-                    camera.stopPreview();
-                    camera.release();
-                    camera = null;
-                } catch (RuntimeException e) {
-                }
+                cameraIsNotOpen = true;
+                camera.stopPreview();
+                camera.release();
+                camera = null;
             }
         }
         cameraMutex.unlock();

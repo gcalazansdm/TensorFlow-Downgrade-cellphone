@@ -35,7 +35,7 @@ public class TextToSpeachControler extends TextToSpeech {
 
     public void speak(String text) {
         mutex.lock();
-        this.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+        this.speak(text, TextToSpeech.QUEUE_ADD, null);
         mutex.unlock();
     }
 
